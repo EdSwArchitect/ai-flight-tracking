@@ -6,7 +6,7 @@ metadata:
 spec:
   instances: 2
 
-  imageName: ghcr.io/cloudnative-pg/postgis:17-3.5
+  imageName: ghcr.io/cloudnative-pg/postgis:17-3.6-system-trixie
 
   enableSuperuserAccess: true
   superuserSecret:

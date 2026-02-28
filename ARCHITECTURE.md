@@ -103,6 +103,8 @@ The system consumes real-time military aircraft transponder data from the public
 | Property     | Value                        |
 |-------------|------------------------------|
 | **Operator** | Strimzi (Kubernetes-native)  |
+| **Version**  | 4.0.0 (managed by Strimzi)   |
+| **Mode**     | KRaft (no ZooKeeper)         |
 | **Topic**    | `military_flights`           |
 
 Kafka decouples the data ingestion service from the database ingestor, providing:
@@ -203,15 +205,38 @@ LINESTRING(-77.0364 38.8951, -77.1200 38.9100, -77.2500 39.0000)
 | **Write Replica** | Receives writes from the Aircraft DB Ingestor   |
 | **Read Replica**  | Serves read queries from the REST API            |
 
-| Technology    | Version  | Notes                                   |
-|--------------|----------|-----------------------------------------|
-| PostgreSQL   | 17.x     | Primary relational database             |
-| PostGIS      | 3.6.x    | Geospatial extension for geo queries    |
+| Technology         | Version  | Notes                                               |
+|-------------------|----------|-----------------------------------------------------|
+| PostgreSQL         | 17.x     | Primary relational database                         |
+| PostGIS            | 3.6.x    | Geospatial extension for geo queries                |
+| CloudNativePG      | 1.25.x   | Kubernetes operator for PostgreSQL (K8s only)       |
+
+#### Kubernetes Deployment (CloudNativePG)
+
+In Kubernetes, PostgreSQL is managed by the **CloudNativePG (CNPG)** operator, which provides:
+- Declarative `Cluster` CRD for defining PostgreSQL instances
+- Automatic streaming replication between primary and replicas
+- Automated failover and switchover
+- Built-in TLS support
+- Integrated backup and recovery
+
+**CNPG Service Names:**
+| Service                  | DNS Name                    | Purpose            |
+|-------------------------|-----------------------------|--------------------|
+| **Read-Write (Primary)** | `postgres-cluster-rw`      | Writes from Ingestor |
+| **Read-Only (Replicas)** | `postgres-cluster-ro`      | Reads from REST API  |
+| **Any Instance**         | `postgres-cluster-r`       | Any available instance |
+
+**Image:** `ghcr.io/cloudnative-pg/postgis:17-3.6-system-trixie` (PostGIS-enabled CNPG operand image)
+
+#### Docker Deployment
+
+In Docker Compose, PostgreSQL uses the standard `postgis/postgis:17-3.5-alpine` image as a single instance with schema initialization via `docker/postgres/init.sql`.
 
 The write/read replica pattern enables:
 - Write-optimized ingestion without impacting query performance
 - Horizontal read scaling for the REST API
-- Data replication from write to read replica
+- Data replication from write to read replica (automatic in CNPG, manual setup in Docker)
 - PostGIS geometry columns for spatial queries (`ST_Within`, `ST_DWithin`, bounding box)
 
 #### Suggested Database Schema
@@ -336,6 +361,12 @@ CREATE INDEX idx_ingestion_log_time ON ingestion_log (started_at DESC);
 - Near real-time indexing for live flight tracking dashboards
 - Full-text search combined with spatial filters
 
+**OpenSearch Dashboards** is deployed alongside OpenSearch in both Docker and Kubernetes environments, providing a web-based UI for:
+- Visualizing indexed flight data on maps
+- Building geospatial dashboards
+- Querying and exploring OpenSearch indices
+- Accessible at `http://localhost:5601`
+
 ---
 
 ### 8. GeoServer (OGC Map Services — Optional)
@@ -416,11 +447,13 @@ Communicates with the Military Watcher REST API to display flight data, likely i
 
 1. **Event-Driven Architecture:** Kafka decouples producers from consumers, enabling independent scaling and fault tolerance.
 2. **Read/Write Separation:** Isolates write-heavy ingestion from read-heavy API queries, preventing performance contention.
-3. **Strimzi Operator:** Kubernetes-native Kafka management simplifies deployment and operations.
+3. **Strimzi Operator:** Kubernetes-native Kafka management simplifies deployment and operations. Kafka 4.0 runs in KRaft mode (no ZooKeeper dependency).
 4. **Strimzi Kafka Bridge:** Provides optional HTTP access to Kafka topics without native Kafka clients.
 5. **Centralized Observability:** Prometheus + Grafana provide end-to-end pipeline visibility with metrics from every service.
 6. **Dual Geo Pipeline:** The Geo Ingestor runs as an independent Kafka consumer group alongside the Aircraft DB Ingestor, enabling geospatial indexing without impacting relational DB writes.
 7. **OpenSearch for Search + GeoServer for OGC:** OpenSearch provides real-time geospatial search and dashboards; GeoServer provides standards-compliant WMS/WFS for traditional GIS clients.
+8. **CloudNativePG Operator:** Kubernetes-native PostgreSQL management via CNPG replaces manual StatefulSets, providing automated replication, failover, and backup with a declarative `Cluster` CRD.
+9. **Dual Deployment Modes:** Docker Compose for local development (single-node infrastructure) and Kind/Kubernetes for production-like deployments with operators (Strimzi, CNPG).
 
 ---
 
@@ -681,7 +714,7 @@ sslContext.init(kmf.getKeyManagers(), trustManagers, null);
 | **Javalin** (optional)         | 6.x           | Minimal HTTP routing (~3 MB), wraps Jetty                      |
 | **Jetty** (alt)                | 12.x          | Embedded HTTP server if not using Javalin                      |
 | **Jackson**                    | 2.18.x        | JSON serialization/deserialization                              |
-| **kafka-clients**              | 3.9.x         | Apache Kafka producer/consumer (direct usage)                  |
+| **kafka-clients**              | 4.0.x         | Apache Kafka producer/consumer (direct usage)                  |
 | **HikariCP**                   | 6.x           | JDBC connection pool                                           |
 | **PostgreSQL JDBC**            | 42.x          | JDBC driver                                                    |
 | **Hibernate** (optional)       | 7.x           | Standalone ORM + Hibernate Spatial (no Spring/Quarkus container) |
@@ -710,7 +743,7 @@ sslContext.init(kmf.getKeyManagers(), trustManagers, null);
 | Technology            | Version          | Notes                                          |
 |----------------------|------------------|-------------------------------------------------|
 | **Strimzi Operator**  | 0.50.x           | Latest stable, Kubernetes-native Kafka operator |
-| **Apache Kafka**      | 3.9+ / 4.0       | Managed by Strimzi                              |
+| **Apache Kafka**      | 4.0.x             | KRaft mode (no ZooKeeper), managed by Strimzi   |
 
 **Strimzi Kafka Security Options:**
 
@@ -724,15 +757,22 @@ sslContext.init(kmf.getKeyManagers(), trustManagers, null);
 
 #### Database
 
-| Technology        | Version       | Notes                                            |
-|------------------|---------------|--------------------------------------------------|
-| **PostgreSQL**    | 17.x          | Latest stable major release, robust and proven   |
-| **PostGIS**       | 3.6.x         | Geospatial extension for geographic queries      |
+| Technology            | Version       | Notes                                            |
+|----------------------|---------------|--------------------------------------------------|
+| **PostgreSQL**        | 17.x          | Latest stable major release, robust and proven   |
+| **PostGIS**           | 3.6.x         | Geospatial extension for geographic queries      |
+| **CloudNativePG**     | 1.25.x        | Kubernetes operator for PostgreSQL lifecycle management |
 
-**Replication Setup:**
-- **Write Replica:** Primary PostgreSQL instance receiving inserts from the Ingestor
-- **Read Replica:** Streaming replication replica serving the REST API
-- PostGIS must be installed on both replicas
+**Replication Setup (Kubernetes — CNPG):**
+- Managed by the CloudNativePG operator via a `Cluster` CRD
+- **Primary (`postgres-cluster-rw`):** Receives writes from the Aircraft DB Ingestor
+- **Replicas (`postgres-cluster-ro`):** Streaming replication replicas serving the REST API
+- Automated failover, switchover, and backup
+- PostGIS preloaded via `ghcr.io/cloudnative-pg/postgis` operand image
+
+**Replication Setup (Docker Compose):**
+- Single PostgreSQL instance with PostGIS (`postgis/postgis:17-3.5-alpine`)
+- Schema initialized from `docker/postgres/init.sql`
 
 #### Frontend
 
@@ -780,13 +820,70 @@ sslContext.init(kmf.getKeyManagers(), trustManagers, null);
 |-------------------|---------------------------------------------------|--------------|
 | Data Source        | ADS-B LOL API (`api.adsb.lol`)                   | v2           |
 | Ingestion Service  | Military Aircraft SVC (Spring Boot)              | JDK 25 / Boot 4.0 |
-| Message Broker     | Apache Kafka (Strimzi on Kubernetes)             | Strimzi 0.50 |
+| Message Broker     | Apache Kafka (Strimzi, KRaft mode)               | Kafka 4.0 / Strimzi 0.50 |
 | DB Consumer        | Aircraft DB Ingestor (Spring Boot)               | JDK 25 / Boot 4.0 |
 | Geo Consumer       | Geo Ingestor (Spring Boot + GeoTools)            | JDK 25 / Boot 4.0 |
-| Database           | PostgreSQL + PostGIS (Write + Read Replicas)     | PG 17 / PostGIS 3.6 |
+| Database           | PostgreSQL + PostGIS (CNPG on K8s)               | PG 17 / PostGIS 3.6 / CNPG 1.25 |
 | Geo Search         | OpenSearch + Geospatial Plugin                   | OpenSearch 2.18 |
+| Geo Dashboards     | OpenSearch Dashboards                            | 2.18         |
 | Map Server         | GeoServer (optional, OGC WMS/WFS)                | GeoServer 2.28 |
 | API Layer          | Military Watcher REST API (Spring Boot)          | JDK 25 / Boot 4.0 |
 | Frontend           | React + Vite + TypeScript (Nginx container)      | React 19.2 / Vite 6 |
 | Monitoring         | Prometheus + Grafana                              |              |
 | Kafka Access       | Strimzi Kafka Bridge (optional)                  |              |
+
+---
+
+## Deployment
+
+### Docker Compose (Local Development)
+
+Two Docker Compose configurations are provided for local infrastructure:
+
+| Configuration | File | Description |
+|---|---|---|
+| **Unencrypted** | `docker/docker-compose.yml` | All services on plaintext (Kafka 9092, PG plain, OS HTTP) |
+| **TLS** | `docker/docker-compose-tls.yml` | TLS-enabled (Kafka 9093, PG SSL, OS HTTPS) |
+
+**Infrastructure Services (Docker):**
+
+| Service | Image | Port |
+|---|---|---|
+| Kafka | `apache/kafka:3.9.0` (KRaft) | 9092 (9093 TLS) |
+| PostgreSQL + PostGIS | `postgis/postgis:17-3.5-alpine` | 5432 |
+| OpenSearch | `opensearchproject/opensearch:2.18.0` | 9200 |
+| OpenSearch Dashboards | `opensearchproject/opensearch-dashboards:2.18.0` | 5601 |
+| Prometheus | `prom/prometheus:v2.51.0` | 9090 |
+| Grafana | `grafana/grafana:11.4.0-ubuntu` | 3000 |
+
+**Scripts:**
+- `scripts/start-infra.sh` — Start unencrypted infrastructure
+- `scripts/start-infra-tls.sh` — Generate certs (if missing) and start TLS infrastructure
+- `scripts/stop-infra.sh` — Stop infrastructure (`--tls` for TLS, `--clean` to remove volumes)
+- `scripts/generate-certs.sh` — Generate self-signed CA + server/client certificates
+
+### Kubernetes (Kind)
+
+A Kind cluster setup is provided for production-like deployments:
+
+**Operators:**
+| Operator | Namespace | Purpose |
+|---|---|---|
+| Strimzi | `kafka` | Manages Kafka cluster (KRaft, 4.0.0) |
+| CloudNativePG | `cnpg-system` | Manages PostgreSQL cluster with PostGIS |
+
+**Application Namespace:** `military-tracker`
+
+**Scripts:**
+- `k8s/setup-kind.sh` — Create Kind cluster and deploy all infrastructure + services
+- `k8s/setup-kind.sh --tls` — Deploy with TLS enabled (Kafka mTLS, PG SSL, OS HTTPS)
+- `k8s/teardown-kind.sh` — Delete the Kind cluster (`--force` to skip confirmation)
+
+**Access Points (Kind):**
+| Service | URL |
+|---|---|
+| Frontend | `http://localhost:80` |
+| OpenSearch Dashboards | `http://localhost:5601` |
+| Prometheus | `http://localhost:9090` |
+| Grafana | `http://localhost:3000` (admin/admin) |
+| Kafka Bridge | `http://localhost:8880` |
