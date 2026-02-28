@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'military-aircraft-svc'
+    static_configs:
+      - targets: ['military-aircraft-svc:9090']
+
+  - job_name: 'aircraft-db-ingestor'
+    static_configs:
+      - targets: ['aircraft-db-ingestor:9090']
+
+  - job_name: 'geo-ingestor'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['geo-ingestor:8081']
+
+  - job_name: 'military-watcher-api'
+    static_configs:
+      - targets: ['military-watcher-api:9090']

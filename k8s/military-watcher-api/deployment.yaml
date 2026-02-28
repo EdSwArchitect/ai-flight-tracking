@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: military-watcher-api
+  namespace: military-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: military-watcher-api
+  template:
+    metadata:
+      labels:
+        app: military-watcher-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: military-watcher-api
+          image: military-watcher-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 7070
+              name: http
+            - containerPort: 9090
+              name: metrics
+          envFrom:
+            - configMapRef:
+                name: military-watcher-api-config
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: military-watcher-api
+  namespace: military-tracker
+spec:
+  type: ClusterIP
+  ports:
+    - port: 7070
+      targetPort: 7070
+      name: http
+    - port: 9090
+      targetPort: 9090
+      name: metrics
+  selector:
+    app: military-watcher-api
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: military-watcher-api-config
+  namespace: military-tracker
+data:
+  DATABASE_URL: "jdbc:postgresql://postgres-replica:5432/militarytracker"
+  DATABASE_USERNAME: "postgres"
+  DATABASE_PASSWORD: "postgres"
+  SERVER_PORT: "7070"

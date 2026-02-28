@@ -1,0 +1,137 @@
+######################################
+# GitHub-ready .gitignore
+# Java + Maven + TLS cert material + IDEs + OS
+######################################
+
+##########
+# Maven / Java build artifacts
+##########
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# If you use multi-module builds, target/ covers it.
+# Keep Maven Wrapper tracked by default (recommended for GitHub).
+# (So we do NOT ignore mvnw, mvnw.cmd, or .mvn/wrapper/*)
+
+##########
+# Logs / runtime artifacts
+##########
+*.log
+logs/
+*.pid
+*.pid.lock
+*.seed
+*.stackdump
+
+##########
+# TLS / certs / keystores (DO NOT COMMIT)
+##########
+# Java keystores / truststores
+*.jks
+*.p12
+*.pfx
+*.keystore
+*.truststore
+
+# PEM / cert material
+*.pem
+*.crt
+*.cer
+*.key
+*.csr
+*.der
+
+# Common secret files
+*.password
+*.credentials
+*.secret
+*.secrets
+*.token
+*.env
+.env.*
+.envrc
+
+# Common secret directories (optional; keep if you use these names)
+certs/
+tls/
+secrets/
+
+# Allow committing example/public certs if you want (uncomment as needed)
+# !certs/README.md
+# !certs/examples/**
+# !tls/examples/**
+
+##########
+# IDEs
+##########
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# VS Code
+.vscode/
+
+# Metals / Bloop (Scala tooling; harmless to ignore even in Java repos)
+.metals/
+.bloop/
+.ensime_cache/
+
+##########
+# OS files
+##########
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+##########
+# Coverage / test outputs
+##########
+/coverage/
+*.lcov
+*.exec
+*.hprof
+
+# JaCoCo
+jacoco.exec
+**/jacoco.exec
+**/jacoco*.exec
+
+# Surefire / Failsafe
+**/surefire-reports/
+**/failsafe-reports/
+
+##########
+# Common local config overrides (optional; uncomment if you use these patterns)
+##########
+# application-local.properties
+# application-local.yml
+# application-local.yaml
+# *.local.properties
+# *.local.yml
+# *.local.yaml
+
+##########
+# Docker / Compose overrides (optional)
+##########
+docker-compose.override.yml
+

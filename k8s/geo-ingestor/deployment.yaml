@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: geo-ingestor
+  namespace: military-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: geo-ingestor
+  template:
+    metadata:
+      labels:
+        app: geo-ingestor
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+        - name: geo-ingestor
+          image: geo-ingestor:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 8081
+              name: management
+          env:
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "military-tracker-kafka-kafka-bootstrap:9092"
+            - name: KAFKA_TOPIC
+              value: "military_flights"
+            - name: KAFKA_CONSUMER_GROUP
+              value: "geo-ingestor-group"
+            - name: OPENSEARCH_HOST
+              value: "opensearch-cluster"
+            - name: OPENSEARCH_PORT
+              value: "9200"
+            - name: OPENSEARCH_SCHEME
+              value: "http"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: management
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: management
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: geo-ingestor
+  namespace: military-tracker
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: management
+  selector:
+    app: geo-ingestor

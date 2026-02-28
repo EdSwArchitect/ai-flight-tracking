@@ -1,0 +1,157 @@
+services:
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: SSL://0.0.0.0:9093,CONTROLLER://0.0.0.0:9094
+      KAFKA_ADVERTISED_LISTENERS: SSL://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: SSL:SSL,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9094
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: MilitaryTrackerKafkaCluster1
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/certs/kafka-keystore.p12
+      KAFKA_SSL_KEYSTORE_PASSWORD: changeit
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/certs/ca-truststore.p12
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: changeit
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+      KAFKA_SSL_CLIENT_AUTH: none
+    ports:
+      - "9093:9093"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+      - ../certs/kafka:/etc/kafka/certs:ro
+      - ../certs/ca:/etc/kafka/ca:ro
+    healthcheck:
+      test: ["CMD-SHELL", "echo | openssl s_client -connect localhost:9093 -servername localhost 2>/dev/null | grep -q 'Verify return code' && exit 0 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - military-tracker-net
+
+  postgres:
+    image: postgis/postgis:17-3.5-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: militarytracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ../certs/postgres/server.crt:/var/lib/postgresql/server.crt:ro
+      - ../certs/postgres/server.key:/var/lib/postgresql/server.key:ro
+      - ../certs/postgres/root.crt:/var/lib/postgresql/root.crt:ro
+    command: >
+      postgres
+      -c ssl=on
+      -c ssl_cert_file=/var/lib/postgresql/server.crt
+      -c ssl_key_file=/var/lib/postgresql/server.key
+      -c ssl_ca_file=/var/lib/postgresql/root.crt
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - military-tracker-net
+
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    container_name: opensearch
+    environment:
+      discovery.type: single-node
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      plugins.security.ssl.transport.pemcert_filepath: certs/opensearch.crt
+      plugins.security.ssl.transport.pemkey_filepath: certs/opensearch.key
+      plugins.security.ssl.transport.pemtrustedcas_filepath: certs/ca.crt
+      plugins.security.ssl.transport.enforce_hostname_verification: "false"
+      plugins.security.ssl.http.enabled: "true"
+      plugins.security.ssl.http.pemcert_filepath: certs/opensearch.crt
+      plugins.security.ssl.http.pemkey_filepath: certs/opensearch.key
+      plugins.security.ssl.http.pemtrustedcas_filepath: certs/ca.crt
+      plugins.security.authcz.admin_dn: "CN=admin,OU=opensearch,O=MilitaryTracker,L=Local,ST=Dev,C=US"
+      plugins.security.nodes_dn: "CN=opensearch-node,OU=opensearch,O=MilitaryTracker,L=Local,ST=Dev,C=US"
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+      - ../certs/opensearch:/usr/share/opensearch/config/certs:ro
+      - ../certs/ca/ca.crt:/usr/share/opensearch/config/certs/ca.crt:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sk https://localhost:9200/_cluster/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - military-tracker-net
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus-tls.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - military-tracker-net
+
+  grafana:
+    image: grafana/grafana:11.4.0-ubuntu
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./grafana/dashboard-provider.yml:/etc/grafana/provisioning/dashboards/dashboard-provider.yml:ro
+      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    networks:
+      - military-tracker-net
+
+networks:
+  military-tracker-net:
+    driver: bridge
+
+volumes:
+  kafka-data:
+  postgres-data:
+  opensearch-data:
+  prometheus-data:
+  grafana-data:

@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aircraft-db-ingestor
+  namespace: military-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aircraft-db-ingestor
+  template:
+    metadata:
+      labels:
+        app: aircraft-db-ingestor
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: aircraft-db-ingestor
+          image: aircraft-db-ingestor:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8081
+              name: health
+            - containerPort: 9090
+              name: metrics
+          envFrom:
+            - configMapRef:
+                name: aircraft-db-ingestor-config
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aircraft-db-ingestor
+  namespace: military-tracker
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9090
+      targetPort: 9090
+      name: metrics
+  selector:
+    app: aircraft-db-ingestor
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aircraft-db-ingestor-config
+  namespace: military-tracker
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "military-tracker-kafka-kafka-bootstrap:9092"
+  KAFKA_TOPIC: "military_flights"
+  KAFKA_CONSUMER_GROUP: "db-ingestor-group"
+  DATABASE_URL: "jdbc:postgresql://postgres-primary:5432/militarytracker"
+  DATABASE_USERNAME: "postgres"
+  DATABASE_PASSWORD: "postgres"

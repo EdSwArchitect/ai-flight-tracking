@@ -1,0 +1,69 @@
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+CREATE TABLE aircraft (
+    id              BIGSERIAL       PRIMARY KEY,
+    hex_icao        VARCHAR(6)      NOT NULL UNIQUE,
+    registration    VARCHAR(20),
+    aircraft_type   VARCHAR(50),
+    description     VARCHAR(255),
+    operator        VARCHAR(100),
+    country         VARCHAR(100),
+    created_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_aircraft_hex ON aircraft (hex_icao);
+CREATE INDEX idx_aircraft_type ON aircraft (aircraft_type);
+
+CREATE TABLE flight_positions (
+    id              BIGSERIAL       PRIMARY KEY,
+    aircraft_id     BIGINT          NOT NULL REFERENCES aircraft(id),
+    flight          VARCHAR(8),
+    position        GEOMETRY(POINTZ, 4326) NOT NULL,
+    alt_baro        INTEGER,
+    alt_geom        INTEGER,
+    ground_speed    REAL,
+    track           REAL,
+    vertical_rate   INTEGER,
+    squawk          VARCHAR(4),
+    category        VARCHAR(4),
+    on_ground       BOOLEAN         DEFAULT FALSE,
+    seen_at         TIMESTAMPTZ     NOT NULL,
+    ingested_at     TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_aircraft FOREIGN KEY (aircraft_id) REFERENCES aircraft(id)
+);
+
+CREATE INDEX idx_flight_positions_geom ON flight_positions USING GIST (position);
+CREATE INDEX idx_flight_positions_seen ON flight_positions (seen_at DESC);
+CREATE INDEX idx_flight_positions_aircraft_time ON flight_positions (aircraft_id, seen_at DESC);
+CREATE INDEX idx_flight_positions_flight ON flight_positions (flight);
+
+CREATE TABLE flight_tracks (
+    id              BIGSERIAL       PRIMARY KEY,
+    aircraft_id     BIGINT          NOT NULL REFERENCES aircraft(id),
+    flight          VARCHAR(8),
+    track_line      GEOMETRY(LINESTRINGZ, 4326),
+    start_time      TIMESTAMPTZ     NOT NULL,
+    end_time        TIMESTAMPTZ,
+    point_count     INTEGER         DEFAULT 0,
+    created_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_flight_tracks_geom ON flight_tracks USING GIST (track_line);
+CREATE INDEX idx_flight_tracks_aircraft ON flight_tracks (aircraft_id, start_time DESC);
+CREATE INDEX idx_flight_tracks_time ON flight_tracks (start_time DESC);
+
+CREATE TABLE ingestion_log (
+    id              BIGSERIAL       PRIMARY KEY,
+    batch_id        UUID            NOT NULL,
+    source_url      VARCHAR(255)    NOT NULL,
+    records_received    INTEGER     NOT NULL DEFAULT 0,
+    records_ingested    INTEGER     NOT NULL DEFAULT 0,
+    records_failed      INTEGER     NOT NULL DEFAULT 0,
+    started_at      TIMESTAMPTZ     NOT NULL,
+    completed_at    TIMESTAMPTZ,
+    error_message   TEXT
+);
+
+CREATE INDEX idx_ingestion_log_time ON ingestion_log (started_at DESC);

@@ -1,0 +1,43 @@
+{
+  "now": 1709052000,
+  "total": 2,
+  "ac": [
+    {
+      "hex": "AE1234",
+      "flight": "RCH405  ",
+      "r": "05-5139",
+      "t": "C17",
+      "desc": "Boeing C-17A Globemaster III",
+      "ownOp": "United States Air Force",
+      "lat": 38.8951,
+      "lon": -77.0364,
+      "alt_baro": 35000,
+      "alt_geom": 35150,
+      "gs": 450.2,
+      "track": 270.5,
+      "baro_rate": -128,
+      "squawk": "1234",
+      "category": "A5",
+      "nav_altitude_mcp": 35008,
+      "nav_heading": 270.0,
+      "dbFlags": 1
+    },
+    {
+      "hex": "AE5678",
+      "flight": "EVAC01  ",
+      "r": "08-8190",
+      "t": "C130",
+      "desc": "Lockheed C-130J Super Hercules",
+      "ownOp": "United States Air Force",
+      "lat": 39.0000,
+      "lon": -77.2500,
+      "alt_baro": "ground",
+      "alt_geom": 0,
+      "gs": 0.0,
+      "track": 180.0,
+      "squawk": "7700",
+      "category": "A5",
+      "dbFlags": 1
+    }
+  ]
+}

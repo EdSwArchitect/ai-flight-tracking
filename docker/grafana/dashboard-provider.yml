@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: military-tracker
+    orgId: 1
+    folder: Military Tracker
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

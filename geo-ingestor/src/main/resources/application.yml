@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: geo-ingestor
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:geo-ingestor-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    ssl:
+      enabled: ${KAFKA_SSL_ENABLED:false}
+      trust-store-location: ${KAFKA_SSL_TRUSTSTORE_LOCATION:}
+      trust-store-password: ${KAFKA_SSL_TRUSTSTORE_PASSWORD:}
+      key-store-location: ${KAFKA_SSL_KEYSTORE_LOCATION:}
+      key-store-password: ${KAFKA_SSL_KEYSTORE_PASSWORD:}
+    security:
+      protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+
+kafka:
+  topic: ${KAFKA_TOPIC:military_flights}
+
+opensearch:
+  host: ${OPENSEARCH_HOST:localhost}
+  port: ${OPENSEARCH_PORT:9200}
+  scheme: ${OPENSEARCH_SCHEME:http}
+  index: ${OPENSEARCH_INDEX:military_flights_geo}
+  ssl:
+    truststore-path: ${OPENSEARCH_SSL_TRUSTSTORE_PATH:}
+    truststore-password: ${OPENSEARCH_SSL_TRUSTSTORE_PASSWORD:changeit}
+
+server:
+  port: 8080
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: always
