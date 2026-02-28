@@ -94,8 +94,11 @@ bash k8s/setup-kind.sh
 # With TLS enabled
 bash k8s/setup-kind.sh --tls
 
-# Tear down
-kind delete cluster --name military-tracker
+# Tear down (with confirmation prompt)
+bash k8s/teardown-kind.sh
+
+# Tear down without confirmation
+bash k8s/teardown-kind.sh --force
 ```
 
 ### Access Points (Kind)
@@ -182,7 +185,7 @@ Certificates are written to `certs/` with subdirectories for `ca/`, `kafka/`, `p
 |-----------|-----------|
 | Backend | Java 21, Plain Java + Spring Boot |
 | Frontend | React 19, TypeScript, Vite, Leaflet |
-| Message Broker | Apache Kafka 3.9 (Strimzi on K8s) |
+| Message Broker | Apache Kafka 4.0 (Strimzi on K8s) |
 | Database | PostgreSQL 17 + PostGIS 3.5 |
 | Search | OpenSearch 2.18 |
 | Monitoring | Prometheus, Grafana |

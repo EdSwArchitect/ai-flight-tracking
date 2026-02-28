@@ -35,8 +35,6 @@ spec:
               value: "-Xms512m -Xmx512m"
             - name: DISABLE_SECURITY_PLUGIN
               value: "true"
-            - name: plugins.security.disabled
-              value: "true"
           resources:
             requests:
               memory: "1Gi"

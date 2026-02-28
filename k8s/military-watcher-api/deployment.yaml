@@ -72,7 +72,7 @@ metadata:
   name: military-watcher-api-config
   namespace: military-tracker
 data:
-  DATABASE_URL: "jdbc:postgresql://postgres-replica:5432/militarytracker"
+  DATABASE_URL: "jdbc:postgresql://postgres-cluster-ro:5432/militarytracker"
   DATABASE_USERNAME: "postgres"
   DATABASE_PASSWORD: "postgres"
   SERVER_PORT: "7070"

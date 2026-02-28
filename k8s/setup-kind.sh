@@ -38,6 +38,11 @@ kind create cluster --config "$SCRIPT_DIR/kind-config.yaml"
 echo "==> Creating application namespace..."
 kubectl apply -f "$SCRIPT_DIR/namespace.yaml"
 
+echo "==> Installing CloudNativePG Operator..."
+kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.25/releases/cnpg-1.25.1.yaml
+echo "Waiting for CNPG operator to be ready..."
+kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=cloudnative-pg -n cnpg-system --timeout=300s
+
 echo "==> Installing Strimzi Kafka Operator..."
 kubectl create namespace kafka || true
 kubectl apply -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
@@ -47,6 +52,10 @@ kubectl wait --for=condition=Ready pod -l name=strimzi-cluster-operator -n kafka
 echo "==> Configuring Strimzi to watch military-tracker namespace..."
 kubectl create rolebinding strimzi-cluster-operator \
   --clusterrole=strimzi-cluster-operator-namespaced \
+  --serviceaccount=kafka:strimzi-cluster-operator \
+  -n military-tracker || true
+kubectl create rolebinding strimzi-cluster-operator-watched \
+  --clusterrole=strimzi-cluster-operator-watched \
   --serviceaccount=kafka:strimzi-cluster-operator \
   -n military-tracker || true
 kubectl create rolebinding strimzi-cluster-operator-entity-operator \
@@ -88,19 +97,12 @@ echo "==> Deploying Kafka Bridge..."
 kubectl apply -f "$SCRIPT_DIR/kafka/kafka-bridge.yaml"
 
 # ---------------------------------------------------------------------------
-# Deploy PostgreSQL
+# Deploy PostgreSQL (CloudNativePG)
 # ---------------------------------------------------------------------------
-if [ "$TLS" = "true" ]; then
-    echo "==> Deploying PostgreSQL (TLS)..."
-    kubectl apply -f "$SCRIPT_DIR/postgres/postgres-secret.yaml"
-    kubectl apply -f "$SCRIPT_DIR/postgres/postgres-configmap.yaml"
-    kubectl apply -f "$SCRIPT_DIR/tls/postgres-tls-statefulset.yaml"
-    # Deploy replica without TLS (reads don't require TLS in dev)
-    kubectl apply -f "$SCRIPT_DIR/postgres/postgres-replica-statefulset.yaml"
-else
-    echo "==> Deploying PostgreSQL..."
-    kubectl apply -f "$SCRIPT_DIR/postgres/"
-fi
+echo "==> Deploying PostgreSQL (CloudNativePG)..."
+kubectl apply -f "$SCRIPT_DIR/postgres/postgres-secret.yaml"
+kubectl apply -f "$SCRIPT_DIR/postgres/postgres-configmap.yaml"
+kubectl apply -f "$SCRIPT_DIR/postgres/postgres-cluster.yaml"
 
 # ---------------------------------------------------------------------------
 # Deploy OpenSearch
@@ -114,7 +116,7 @@ else
 fi
 
 echo "==> Waiting for infrastructure to be ready..."
-kubectl wait --for=condition=Ready pod -l app=postgres-primary -n military-tracker --timeout=180s || true
+kubectl wait --for=condition=Ready cluster/postgres-cluster -n military-tracker --timeout=300s || true
 kubectl wait --for=condition=Ready pod -l app=opensearch -n military-tracker --timeout=180s || true
 
 # ---------------------------------------------------------------------------

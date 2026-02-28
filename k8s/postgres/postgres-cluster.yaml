@@ -1,0 +1,36 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-cluster
+  namespace: military-tracker
+spec:
+  instances: 2
+
+  imageName: ghcr.io/cloudnative-pg/postgis:17-3.5
+
+  enableSuperuserAccess: true
+  superuserSecret:
+    name: postgres-superuser
+
+  bootstrap:
+    initdb:
+      database: militarytracker
+      owner: postgres
+      postInitApplicationSQLRefs:
+        configMapRefs:
+          - name: postgres-init-sql
+            key: init.sql
+
+  postgresql:
+    shared_preload_libraries: []
+
+  storage:
+    size: 10Gi
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "1000m"

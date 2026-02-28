@@ -72,6 +72,6 @@ data:
   KAFKA_BOOTSTRAP_SERVERS: "military-tracker-kafka-kafka-bootstrap:9092"
   KAFKA_TOPIC: "military_flights"
   KAFKA_CONSUMER_GROUP: "db-ingestor-group"
-  DATABASE_URL: "jdbc:postgresql://postgres-primary:5432/militarytracker"
+  DATABASE_URL: "jdbc:postgresql://postgres-cluster-rw:5432/militarytracker"
   DATABASE_USERNAME: "postgres"
   DATABASE_PASSWORD: "postgres"
