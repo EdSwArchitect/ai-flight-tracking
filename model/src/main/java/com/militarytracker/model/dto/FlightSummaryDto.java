@@ -1,21 +1,28 @@
 package com.militarytracker.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FlightSummaryDto {
 
     private long id;
     private String hexIcao;
+    private String registration;
     private String aircraftType;
     private String flight;
+    private String squawk;
+    @JsonProperty("latitude")
+    private Double lat;
+    @JsonProperty("longitude")
+    private Double lon;
+    @JsonProperty("altitude")
     private Integer altBaro;
     private Double groundSpeed;
     private Double track;
-    private Double lat;
-    private Double lon;
     private Integer altGeom;
     private boolean onGround;
+    @JsonProperty("lastSeen")
     private String seenAt;
 
     public FlightSummaryDto() {
@@ -37,6 +44,14 @@ public class FlightSummaryDto {
         this.hexIcao = hexIcao;
     }
 
+    public String getRegistration() {
+        return registration;
+    }
+
+    public void setRegistration(String registration) {
+        this.registration = registration;
+    }
+
     public String getAircraftType() {
         return aircraftType;
     }
@@ -51,6 +66,14 @@ public class FlightSummaryDto {
 
     public void setFlight(String flight) {
         this.flight = flight;
+    }
+
+    public String getSquawk() {
+        return squawk;
+    }
+
+    public void setSquawk(String squawk) {
+        this.squawk = squawk;
     }
 
     public Integer getAltBaro() {

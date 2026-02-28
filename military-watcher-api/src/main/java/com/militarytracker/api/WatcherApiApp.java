@@ -2,6 +2,7 @@ package com.militarytracker.api;
 
 import com.militarytracker.api.handler.GeoBoxFlightHandler;
 import com.militarytracker.api.handler.GetFlightHandler;
+import com.militarytracker.api.handler.GetFlightTrackHandler;
 import com.militarytracker.api.handler.ListFlightsHandler;
 import com.militarytracker.api.repository.FlightReadRepository;
 import com.militarytracker.api.routes.FlightRoutes;
@@ -35,6 +36,7 @@ public class WatcherApiApp {
         ListFlightsHandler listFlightsHandler = new ListFlightsHandler(flightRepo);
         GetFlightHandler getFlightHandler = new GetFlightHandler(flightRepo);
         GeoBoxFlightHandler geoBoxFlightHandler = new GeoBoxFlightHandler(flightRepo);
+        GetFlightTrackHandler getFlightTrackHandler = new GetFlightTrackHandler(flightRepo);
 
         Javalin app = Javalin.create(javalinConfig -> {
             javalinConfig.jsonMapper(new JavalinJackson(JsonMapper.get(), false));
@@ -44,7 +46,7 @@ public class WatcherApiApp {
             );
         });
 
-        FlightRoutes.register(app, listFlightsHandler, getFlightHandler, geoBoxFlightHandler);
+        FlightRoutes.register(app, listFlightsHandler, getFlightHandler, geoBoxFlightHandler, getFlightTrackHandler);
         HealthRoutes.register(app);
 
         int port = config.getInt("server.port");

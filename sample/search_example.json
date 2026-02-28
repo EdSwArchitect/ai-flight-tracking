@@ -1,0 +1,9 @@
+{
+  "query": {
+    "term": {
+      "properties.flight.keyword": {
+        "value": "SPAR309"
+      }
+    }
+  }
+}

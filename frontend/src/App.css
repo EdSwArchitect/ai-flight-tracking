@@ -288,6 +288,11 @@ body {
   border: 1px solid #0f3460;
 }
 
+/* Selected marker highlight */
+.selected-marker {
+  filter: hue-rotate(140deg) saturate(2) brightness(1.2);
+}
+
 /* Page title */
 .page-title {
   font-size: 1.5rem;

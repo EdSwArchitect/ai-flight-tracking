@@ -2,7 +2,7 @@ package com.militarytracker.api.handler;
 
 import com.militarytracker.api.metrics.ApiMetrics;
 import com.militarytracker.api.repository.FlightReadRepository;
-import com.militarytracker.model.dto.FlightSummaryDto;
+import com.militarytracker.model.dto.FlightDetailDto;
 import io.javalin.http.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ public class GetFlightHandler {
         LOG.debug("Getting flight by id={}", id);
 
         try {
-            FlightSummaryDto flight = repository.getFlightById(id);
+            FlightDetailDto flight = repository.getFlightDetailById(id);
             if (flight == null) {
                 ApiMetrics.REQUESTS_TOTAL.labels("get_flight", "404").inc();
                 ctx.status(404).json(Map.of("error", "Flight not found: " + id));

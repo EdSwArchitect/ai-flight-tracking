@@ -1,4 +1,4 @@
-import type { FlightSummary, FlightDetail, GeoBoxRequest } from '../types/flight';
+import type { FlightSummary, FlightDetail, TrackPoint, GeoBoxRequest } from '../types/flight';
 
 const API_BASE = '/api';
 
@@ -24,6 +24,17 @@ export async function fetchFlightDetail(id: number): Promise<FlightDetail> {
       throw new Error(`Flight with ID ${id} not found`);
     }
     throw new Error(`Failed to fetch flight detail: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function fetchFlightTrack(id: number): Promise<TrackPoint[]> {
+  const response = await fetch(`${API_BASE}/flight-track/${id}`);
+  if (!response.ok) {
+    if (response.status === 404) {
+      return [];
+    }
+    throw new Error(`Failed to fetch flight track: ${response.status} ${response.statusText}`);
   }
   return response.json();
 }

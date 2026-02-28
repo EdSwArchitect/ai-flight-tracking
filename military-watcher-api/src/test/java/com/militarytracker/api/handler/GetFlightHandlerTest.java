@@ -1,7 +1,7 @@
 package com.militarytracker.api.handler;
 
 import com.militarytracker.api.repository.FlightReadRepository;
-import com.militarytracker.model.dto.FlightSummaryDto;
+import com.militarytracker.model.dto.FlightDetailDto;
 import io.javalin.http.Context;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,24 +32,24 @@ class GetFlightHandlerTest {
 
     @Test
     void handle_existingFlight_returnsDto() throws Exception {
-        FlightSummaryDto dto = new FlightSummaryDto();
+        FlightDetailDto dto = new FlightDetailDto();
         dto.setId(42L);
         dto.setHexIcao("AE1234");
         dto.setFlight("TEST01");
 
         when(ctx.pathParam("id")).thenReturn("42");
-        when(repository.getFlightById(42L)).thenReturn(dto);
+        when(repository.getFlightDetailById(42L)).thenReturn(dto);
 
         handler.handle(ctx);
 
-        verify(repository).getFlightById(42L);
+        verify(repository).getFlightDetailById(42L);
         verify(ctx).json(dto);
     }
 
     @Test
     void handle_nonExistentFlight_returns404() throws Exception {
         when(ctx.pathParam("id")).thenReturn("999");
-        when(repository.getFlightById(999L)).thenReturn(null);
+        when(repository.getFlightDetailById(999L)).thenReturn(null);
         when(ctx.status(404)).thenReturn(ctx);
 
         handler.handle(ctx);
@@ -71,7 +71,7 @@ class GetFlightHandlerTest {
     @Test
     void handle_repositoryThrows_returns500() throws Exception {
         when(ctx.pathParam("id")).thenReturn("1");
-        when(repository.getFlightById(1L)).thenThrow(new RuntimeException("DB error"));
+        when(repository.getFlightDetailById(1L)).thenThrow(new RuntimeException("DB error"));
         when(ctx.status(500)).thenReturn(ctx);
 
         handler.handle(ctx);

@@ -36,6 +36,16 @@ export interface FlightDetail {
   totalPositions: number;
 }
 
+export interface TrackPoint {
+  id: number;
+  latitude: number;
+  longitude: number;
+  altBaro: number | null;
+  groundSpeed: number | null;
+  track: number | null;
+  timestamp: string;
+}
+
 export interface GeoBoxRequest {
   north: number;
   south: number;

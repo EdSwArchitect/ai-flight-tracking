@@ -1,6 +1,7 @@
 package com.militarytracker.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FlightDetailDto {
@@ -13,16 +14,21 @@ public class FlightDetailDto {
     private String operator;
     private String country;
     private String flight;
+    @JsonProperty("altitudeBaro")
     private Integer altBaro;
+    @JsonProperty("altitudeGeom")
     private Integer altGeom;
     private Double groundSpeed;
     private Double track;
     private Integer verticalRate;
     private String squawk;
     private String category;
+    @JsonProperty("latitude")
     private Double lat;
+    @JsonProperty("longitude")
     private Double lon;
     private boolean onGround;
+    @JsonProperty("lastSeen")
     private String seenAt;
 
     public FlightDetailDto() {

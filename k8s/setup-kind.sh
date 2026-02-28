@@ -117,6 +117,11 @@ fi
 
 echo "==> Waiting for infrastructure to be ready..."
 kubectl wait --for=condition=Ready cluster/postgres-cluster -n military-tracker --timeout=300s || true
+
+echo "==> Setting PostgreSQL superuser password..."
+kubectl exec postgres-cluster-1 -n military-tracker -c postgres -- \
+  psql -U postgres -c "ALTER USER postgres PASSWORD 'postgres';" || true
+
 kubectl wait --for=condition=Ready pod -l app=opensearch -n military-tracker --timeout=180s || true
 
 # ---------------------------------------------------------------------------
