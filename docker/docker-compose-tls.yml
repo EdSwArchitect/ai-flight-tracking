@@ -106,6 +106,20 @@ services:
     networks:
       - military-tracker-net
 
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.18.0
+    container_name: opensearch-dashboards
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
+      opensearch.ssl.verificationMode: none
+    ports:
+      - "5601:5601"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    networks:
+      - military-tracker-net
+
   prometheus:
     image: prom/prometheus:v2.51.0
     container_name: prometheus

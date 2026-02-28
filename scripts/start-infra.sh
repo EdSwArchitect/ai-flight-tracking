@@ -31,6 +31,19 @@ until curl -s http://localhost:9200/_cluster/health >/dev/null 2>&1; do
 done
 echo " ready"
 
+echo -n "    OpenSearch Dashboards: "
+attempts=0
+until curl -s http://localhost:5601/api/status >/dev/null 2>&1; do
+    echo -n "."
+    sleep 3
+    attempts=$((attempts + 1))
+    if [ $attempts -ge 40 ]; then
+        echo " timeout (may still be starting)"
+        break
+    fi
+done
+[ $attempts -lt 40 ] && echo " ready"
+
 echo -n "    Prometheus: "
 until curl -s http://localhost:9090/-/ready >/dev/null 2>&1; do
     echo -n "."
@@ -63,11 +76,12 @@ echo ""
 echo "==> Infrastructure is running!"
 echo ""
 echo "Access points:"
-echo "  Kafka:          localhost:9092"
-echo "  PostgreSQL:     localhost:5432  (postgres/postgres/militarytracker)"
-echo "  OpenSearch:     http://localhost:9200"
-echo "  Prometheus:     http://localhost:9090"
-echo "  Grafana:        http://localhost:3000  (admin/admin)"
+echo "  Kafka:                  localhost:9092"
+echo "  PostgreSQL:             localhost:5432  (postgres/postgres/militarytracker)"
+echo "  OpenSearch:             http://localhost:9200"
+echo "  OpenSearch Dashboards:  http://localhost:5601"
+echo "  Prometheus:             http://localhost:9090"
+echo "  Grafana:                http://localhost:3000  (admin/admin)"
 echo ""
 echo "Useful commands:"
 echo "  docker compose -f docker/docker-compose.yml logs -f kafka"

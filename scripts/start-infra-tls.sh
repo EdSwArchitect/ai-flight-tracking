@@ -52,6 +52,19 @@ until curl -sk https://localhost:9200/_cluster/health >/dev/null 2>&1; do
 done
 [ $attempts -lt 40 ] && echo " ready"
 
+echo -n "    OpenSearch Dashboards: "
+attempts=0
+until curl -s http://localhost:5601/api/status >/dev/null 2>&1; do
+    echo -n "."
+    sleep 3
+    attempts=$((attempts + 1))
+    if [ $attempts -ge 40 ]; then
+        echo " timeout (may still be starting)"
+        break
+    fi
+done
+[ $attempts -lt 40 ] && echo " ready"
+
 echo -n "    Prometheus: "
 until curl -s http://localhost:9090/-/ready >/dev/null 2>&1; do
     echo -n "."
@@ -91,11 +104,12 @@ echo ""
 echo "==> TLS Infrastructure is running!"
 echo ""
 echo "Access points:"
-echo "  Kafka (SSL):    localhost:9093"
-echo "  PostgreSQL:     localhost:5432  (ssl=on, postgres/postgres/militarytracker)"
-echo "  OpenSearch:     https://localhost:9200"
-echo "  Prometheus:     http://localhost:9090"
-echo "  Grafana:        http://localhost:3000  (admin/admin)"
+echo "  Kafka (SSL):            localhost:9093"
+echo "  PostgreSQL:             localhost:5432  (ssl=on, postgres/postgres/militarytracker)"
+echo "  OpenSearch:             https://localhost:9200"
+echo "  OpenSearch Dashboards:  http://localhost:5601"
+echo "  Prometheus:             http://localhost:9090"
+echo "  Grafana:                http://localhost:3000  (admin/admin)"
 echo ""
 echo "TLS connection examples:"
 echo "  Kafka:      kafka-topics.sh --bootstrap-server localhost:9093 --command-config client-ssl.properties --list"

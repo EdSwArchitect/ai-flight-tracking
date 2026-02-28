@@ -7,8 +7,8 @@ metadata:
     strimzi.io/cluster: military-tracker-kafka
 spec:
   partitions: 6
-  replicas: 3
+  replicas: 1
   config:
     retention.ms: "86400000"
     cleanup.policy: delete
-    min.insync.replicas: "2"
+    min.insync.replicas: "1"
