@@ -52,8 +52,11 @@ The production build is served by Nginx with SPA fallback routing. Nginx proxies
 
 ## Features
 
-- Sortable flight table with real-time auto-refresh (15s)
+- Sortable, paginated flight table with real-time auto-refresh (15s)
+- Configurable page size (25, 50, 100 rows)
+- Right-click context menu on table rows to show flight on map (new tab) or view details
 - Flight detail page with full aircraft metadata
-- Interactive Leaflet map with flight markers
+- Interactive Leaflet map with fighter aircraft SVG icons rotated by heading
 - Geographic bounding box filtering
 - Click a flight marker on the map to view its historical track as a polyline
+- Deep-link to map with a selected flight via `/map?flight={id}`

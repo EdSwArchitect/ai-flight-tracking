@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { FlightSummary } from '../types/flight';
 
@@ -7,6 +7,13 @@ type SortDirection = 'asc' | 'desc';
 
 interface FlightTableProps {
   flights: FlightSummary[];
+}
+
+interface ContextMenuState {
+  visible: boolean;
+  x: number;
+  y: number;
+  flightId: number | null;
 }
 
 function formatLastSeen(isoString: string): string {
@@ -23,6 +30,25 @@ function FlightTable({ flights }: FlightTableProps) {
   const navigate = useNavigate();
   const [sortField, setSortField] = useState<SortField>('lastSeen');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({
+    visible: false, x: 0, y: 0, flightId: null,
+  });
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  }, []);
+
+  useEffect(() => {
+    if (contextMenu.visible) {
+      const handler = () => closeContextMenu();
+      document.addEventListener('click', handler);
+      document.addEventListener('scroll', handler, true);
+      return () => {
+        document.removeEventListener('click', handler);
+        document.removeEventListener('scroll', handler, true);
+      };
+    }
+  }, [contextMenu.visible, closeContextMenu]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -31,6 +57,25 @@ function FlightTable({ flights }: FlightTableProps) {
       setSortField(field);
       setSortDirection('asc');
     }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, flightId: number) => {
+    e.preventDefault();
+    setContextMenu({ visible: true, x: e.clientX, y: e.clientY, flightId });
+  };
+
+  const handleShowOnMap = () => {
+    if (contextMenu.flightId != null) {
+      window.open(`/map?flight=${contextMenu.flightId}`, '_blank');
+    }
+    closeContextMenu();
+  };
+
+  const handleViewDetails = () => {
+    if (contextMenu.flightId != null) {
+      navigate(`/flight/${contextMenu.flightId}`);
+    }
+    closeContextMenu();
   };
 
   const sortedFlights = [...flights].sort((a, b) => {
@@ -84,6 +129,7 @@ function FlightTable({ flights }: FlightTableProps) {
             <tr
               key={flight.id}
               onClick={() => navigate(`/flight/${flight.id}`)}
+              onContextMenu={(e) => handleContextMenu(e, flight.id)}
             >
               <td>{flight.flight || '--'}</td>
               <td>{flight.hexIcao || '--'}</td>
@@ -104,6 +150,20 @@ function FlightTable({ flights }: FlightTableProps) {
           )}
         </tbody>
       </table>
+
+      {contextMenu.visible && (
+        <div
+          className="context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+        >
+          <button className="context-menu-item" onClick={handleShowOnMap}>
+            Show on Map
+          </button>
+          <button className="context-menu-item" onClick={handleViewDetails}>
+            View Details
+          </button>
+        </div>
+      )}
     </div>
   );
 }

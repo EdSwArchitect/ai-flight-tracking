@@ -141,7 +141,7 @@ docker build -t military-tracker-frontend:latest -f docker/frontend/Dockerfile .
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/list-flights` | List all tracked military flights |
+| `GET` | `/list-flights?limit=50&offset=0` | Paginated list of tracked military flights |
 | `GET` | `/list-flight/{id}` | Get details of a specific flight |
 | `GET` | `/flight-track/{id}` | Get historical track points for a flight's aircraft |
 | `POST` | `/geobox-list-flight` | List flights within a geographic bounding box |

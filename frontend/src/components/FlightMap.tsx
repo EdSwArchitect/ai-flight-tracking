@@ -12,16 +12,50 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-const selectedIcon = new L.Icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-  className: 'selected-marker',
-});
+// Fighter aircraft SVG silhouette (top-down view, pointing up)
+const AIRCRAFT_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="28" height="28">
+  <path d="
+    M16 1
+    L17.5 10
+    L26 14
+    L26 15.5
+    L17.5 14
+    L17.5 22
+    L21 25
+    L21 26.5
+    L16 24
+    L11 26.5
+    L11 25
+    L14.5 22
+    L14.5 14
+    L6 15.5
+    L6 14
+    L14.5 10
+    Z"
+    fill="FILL_COLOR"
+    stroke="STROKE_COLOR"
+    stroke-width="0.6"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+function createAircraftIcon(heading: number | null, isSelected: boolean): L.DivIcon {
+  const fill = isSelected ? '#e94560' : '#c0c0e0';
+  const stroke = isSelected ? '#a0001a' : '#444466';
+  const rotation = heading ?? 0;
+  const svg = AIRCRAFT_SVG
+    .replace('FILL_COLOR', fill)
+    .replace('STROKE_COLOR', stroke);
+
+  return L.divIcon({
+    html: `<div style="transform: rotate(${rotation}deg); width: 28px; height: 28px;">${svg}</div>`,
+    className: 'aircraft-icon',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -14],
+  });
+}
 
 const DEFAULT_CENTER: [number, number] = [39.8283, -98.5795];
 const DEFAULT_ZOOM = 4;
@@ -122,7 +156,7 @@ function FlightMap({ flights, selectedFlightId, trackPoints, onFlightSelect }: F
           </CircleMarker>
         ))}
 
-        {/* Flight markers */}
+        {/* Flight markers with aircraft icons */}
         {flights.map((flight) => {
           if (!flight.latitude || !flight.longitude) return null;
           const isSelected = flight.id === selectedFlightId;
@@ -130,7 +164,7 @@ function FlightMap({ flights, selectedFlightId, trackPoints, onFlightSelect }: F
             <Marker
               key={flight.id}
               position={[flight.latitude, flight.longitude]}
-              icon={isSelected ? selectedIcon : new L.Icon.Default()}
+              icon={createAircraftIcon(flight.track, isSelected)}
               eventHandlers={{
                 click: () => onFlightSelect?.(flight.id),
               }}

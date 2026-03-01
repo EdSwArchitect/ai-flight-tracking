@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useFlights } from '../hooks/useFlights';
 import FlightMap from '../components/FlightMap';
 import GeoBoxSelector from '../components/GeoBoxSelector';
@@ -6,6 +7,7 @@ import { fetchFlightsByGeoBox, fetchFlightTrack } from '../api/flightApi';
 import type { FlightSummary, TrackPoint, GeoBoxRequest } from '../types/flight';
 
 function MapPage() {
+  const [searchParams] = useSearchParams();
   const { flights: allFlights, loading, error } = useFlights();
   const [filteredFlights, setFilteredFlights] = useState<FlightSummary[] | null>(null);
   const [geoBoxError, setGeoBoxError] = useState<string | null>(null);
@@ -13,6 +15,21 @@ function MapPage() {
   const [selectedFlightId, setSelectedFlightId] = useState<number | null>(null);
   const [trackPoints, setTrackPoints] = useState<TrackPoint[]>([]);
   const [trackLoading, setTrackLoading] = useState(false);
+  const autoSelectDone = useRef(false);
+
+  // Auto-select flight from query parameter (e.g., /map?flight=123)
+  useEffect(() => {
+    if (autoSelectDone.current || loading || allFlights.length === 0) return;
+
+    const flightParam = searchParams.get('flight');
+    if (flightParam) {
+      const flightId = parseInt(flightParam, 10);
+      if (!isNaN(flightId)) {
+        autoSelectDone.current = true;
+        handleFlightSelect(flightId);
+      }
+    }
+  }, [loading, allFlights, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGeoBoxSearch = async (box: GeoBoxRequest) => {
     try {
